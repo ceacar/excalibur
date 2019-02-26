@@ -1,11 +1,13 @@
 import sys
 def debug(func):
     def wrap(*args, **kwargs):
+        ag = [item for item in args]
+        kg = [item for item in kwargs]
         sys.stderr.write(
             ">{func_name} with args:{ag}, kwargs:{kg}"\
             .format(
                 func_name = func.__qualname__,
-                ag = *args, kg = **kwargs
+                ag = ag, kg = kg
             )
         )
         func(*args, **kwargs)

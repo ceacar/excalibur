@@ -10,5 +10,6 @@ from excalibur.random_string import *
 from excalibur.timethis import *
 from excalibur.workdates import date_jesus
 from excalibur.cache_function import *
+from excalibur.debugger import *
 
 name = "excalibur"
