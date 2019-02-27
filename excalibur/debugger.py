@@ -31,4 +31,5 @@ def debug_with_prefix(prefix):
             )
             func(*args, **kwargs)
         return wrap
+    return debug
 
