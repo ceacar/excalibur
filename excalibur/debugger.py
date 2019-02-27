@@ -46,7 +46,7 @@ def debug_class(cls):
     for key, val in vars(cls).items():
         if callable(val):
             setattr(cls, key,debug(val))
-    return clas
+    return cls
 
 
 
