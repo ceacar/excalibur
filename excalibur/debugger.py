@@ -16,6 +16,10 @@ def debug(func):
     return wrap
 
 def debug_with_prefix(prefix):
+    """
+    use @debug_with_prefix(">>>>") as decorator for python code
+    it automatically prints out >>>func name and args
+    """
     def debug(func):
         @wraps(func)
         def wrap(*args, **kwargs):
