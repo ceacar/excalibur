@@ -37,3 +37,16 @@ def debug_with_prefix(prefix):
         return wrap
     return debug
 
+
+
+def debug_class(cls):
+    """
+    debug decorator for class
+    """
+    for key, val in vars(cls).items():
+        if callable(val):
+            setattr(cls, key,debug(val))
+    return clas
+
+
+
