@@ -12,7 +12,8 @@ def debug(func):
                 ag = ag, kg = kg
             )
         )
-        func(*args, **kwargs)
+        res = func(*args, **kwargs)
+        return res
     return wrap
 
 def debug_with_prefix(prefix):
@@ -33,7 +34,8 @@ def debug_with_prefix(prefix):
                     ag = ag, kg = kg
                 )
             )
-            func(*args, **kwargs)
+            res = func(*args, **kwargs)
+            return res
         return wrap
     return debug
 
