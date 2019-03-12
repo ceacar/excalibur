@@ -51,4 +51,38 @@ def debug_class(cls):
     return cls
 
 
+class FuncCallCounter(type):
+    """
+    Meta class which decorates all the methods of the subclass using call_counter as the decorator
+    example:
+	#inherited as metaclass
+	class A(metaclass=FuncCallCounter):
+    def foo(self):
+        pass
+    def bar(self):
+        pass
+    """
+
+    @staticmethod
+    def call_counter(func):
+        """
+        decorator for counting calls of a function
+        """
+        def helper(*args, **kwargs):
+            helper.calls += 1
+            return func(*args, **kwargs)
+        helper.calls = 0
+        helper.__name__ = func.__name__
+
+        return helper
+
+    def __new__(cls, clsname, superclasses, attributedict):
+        """
+        Every method is decoratored with call_counter
+        """
+        for attr in attributedict:
+            if callable(attributedict[attr]) and not attr.startswith("__"):
+                attributedict[attr] = cls.call_counter(attributedict[attr])
+        return type.__new__(cls, clsname, superclasses, attributedict)
+
 
