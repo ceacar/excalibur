@@ -13,6 +13,14 @@ def debug(func):
             )
         )
         res = func(*args, **kwargs)
+        sys.stderr.write(
+            "\t-->{func_name}_result:{res}\n"\
+            .format(
+                func_name = func.__qualname__,
+                res = res
+            )
+        )
+
         return res
     return wrap
 
