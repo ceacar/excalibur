@@ -7,7 +7,7 @@ def timeit(orig_func):
         start = time.time()
         res = orig_func(*args, **kwargs)
         end = time.time()
-        sys.stderr.write("took {0} seconds to finish {1}".format(end - start, orig_func.__name__))
+        sys.stderr.write("took {0} seconds to finish {1}\n".format(end - start, orig_func.__name__))
         return res
 
     return wrapper
