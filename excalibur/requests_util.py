@@ -9,7 +9,7 @@ def get_remote_file_header(url, auth=None):
     return header_info
 
 
-def get_file_timestamp(url, auth=None):
+def get_remote_file_timestamp(url, auth=None):
     """
     get remote file timestamp, returns a datetime obj
     """

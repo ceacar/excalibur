@@ -21,6 +21,6 @@ class TestRequestTimeUtils(unittest.TestCase):
     def test_get_file_timestamp(self):
         with mock.patch('requests.head') as moc:
             moc.return_value = self.mock_requests()
-            dt_obj = excalibur.get_file_timestamp(self.url, auth={})
+            dt_obj = excalibur.get_remote_file_timestamp(self.url, auth={})
             expected_dt_obj = datetime.datetime(2019, 5, 1, 18, 20, 28)
             self.assertEqual(dt_obj, expected_dt_obj)
