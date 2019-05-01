@@ -11,5 +11,7 @@ from excalibur.timethis import *
 from excalibur.workdates import date_jesus
 from excalibur.cache_function import *
 from excalibur.debugger import *
+from excalibur.time_conversion import *
+from excalibur.requests_util import *
 
 name = "excalibur"
