@@ -6,7 +6,7 @@ __requests_timestamp_format = '%a, %d %b %Y %H:%M:%S %Z'
 
 def get_remote_file_header(url, auth=None):
     header_info = requests.head(url, auth=auth)
-    return header_info
+    return header_info.headers
 
 
 def get_remote_file_timestamp(url, auth=None):
