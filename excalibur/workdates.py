@@ -1,14 +1,15 @@
 #!/usr/bin/env python
-#generate weekdays
+# generate weekdays
 from excalibur import no_market_holidays
 import sys
 import datetime
 import os
 from excalibur import generate_holidays
 
-__debug = bool(os.environ.get("DEBUG",None))
+__debug = bool(os.environ.get("DEBUG", None))
 
-def date_jesus(start_str: str, end_str: str, delta_days: int = 1) -> [datetime.date]:
+
+def date_jesus(start_str, end_str, delta_days = 1):
     start = datetime.datetime.strptime(start_str, '%Y%m%d')
     end = datetime.datetime.strptime(end_str, '%Y%m%d')
     delta = datetime.timedelta(days=delta_days)

@@ -4,11 +4,13 @@ from datetime import date, datetime
 from dateutil.easter import easter
 from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta as rd
-from dateutil.relativedelta import MO, TU, WE, TH, FR, SA, SU
+from dateutil.relativedelta import MO, TH, FR
 import six
+
 
 class HolidayBase(dict):
     PROVINCES = []
+    populating_year = None
 
     def __init__(self, years=[], expand=True, observed=True,
                  prov=None, state=None):
@@ -51,7 +53,7 @@ class HolidayBase(dict):
         elif isinstance(key, six.string_types):
             try:
                 key = parse(key).date()
-            except:
+            except Exception:
                 raise ValueError("Cannot parse date from string '%s'" % key)
         else:
             raise TypeError("Cannot convert type '%s' to date." % type(key))
@@ -142,7 +144,6 @@ class HolidayBase(dict):
         pass
 
 
-
 class NYSEMarketHoliday(HolidayBase):
     def _populate(self, year):
         self.populating_year = year
@@ -220,10 +221,10 @@ class NYSEMarketHoliday(HolidayBase):
 
     def gen_memorial_day(self):
         # Memorial Day
-        if self.populating_year> 1970:
+        if self.populating_year > 1970:
             self[date(self.populating_year, 5, 31) + rd(weekday=MO(-1))] = "Memorial Day"
-        elif self.populating_year>= 1888:
-            self[date(populating_year, 5, 30)] = "Memorial Day"
+        elif self.populating_year >= 1888:
+            self[date(self.populating_year, 5, 30)] = "Memorial Day"
 
     def gen_independence_day(self):
         # Independence Day
@@ -255,14 +256,16 @@ class NYSEMarketHoliday(HolidayBase):
             elif self.observed and date(self.populating_year, 12, 25).weekday() == 6:
                 self[date(self.populating_year, 12, 25) + rd(days=+1)] = name + " (Observed)"
 
-def gen_nyse_holidays(year: int) -> [datetime.date]:
-    holidays = NYSEMarketHoliday(years= year, state="NY")
+
+def gen_nyse_holidays(year):
+    holidays = NYSEMarketHoliday(years=year, state="NY")
     return sorted(holidays)
 
+
 if __name__ == "__main__":
-    if len(sys.argv)>1:
+    if len(sys.argv) > 1:
         year = int(sys.argv[1])
-        holidays = NYSEMarketHoliday(years= year, state="NY")
+        holidays = NYSEMarketHoliday(years=year, state="NY")
     else:
         raise ValueError("not enough argument")
 

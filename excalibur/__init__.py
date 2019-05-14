@@ -13,5 +13,6 @@ from excalibur.cache_function import *
 from excalibur.debugger import *
 from excalibur.time_conversion import *
 from excalibur.requests_util import *
+from excalibur.string_manipulation import *
 
 name = "excalibur"

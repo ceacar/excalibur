@@ -1,4 +1,4 @@
-def merge_dicts(*dicts) -> dict:
+def merge_dicts(*dicts):
     items = []
     for single_dict in dicts:
         items.extend(single_dict.items())
