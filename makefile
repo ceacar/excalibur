@@ -15,8 +15,12 @@ install:
 	  cat ./misc/requirement.txt | awk '{print "pip install",$$0}' | bash)
 utest:
 	(source setenv;\
-	pytest -vv ./$(project_name)/tests/utests/test*.py;\
+	pytest -vv ./$(project_name)/tests/utests/test*.py;)
+
+coverage:
+	(source setenv;\
 	py.test --cov-report term-missing --cov=$(project_name) ./$(project_name)/;)
+
 itest:
 	(source setenv;\
 	pytest -vv ./$(project_name)/tests/itests/itest.py)
