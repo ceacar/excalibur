@@ -16,5 +16,6 @@ from excalibur.requests_util import *
 from excalibur.string_manipulation import *
 from excalibur.web_scraper_utility import *
 from excalibur import exercise
+from excalibur import heap
 
 name = "excalibur"
