@@ -15,7 +15,7 @@ def strip_str_arr(str_arr):
     return res
 
 
-def pprint_str_arr(str_arr):
+def pprint_string(str_arr):
     """
     removes \n and spaces
     then print str_arr line by line
