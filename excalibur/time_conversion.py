@@ -1,4 +1,6 @@
 import pytz
+import datetime
+import calendar
 
 __standard_datetime_format = '%Y-%m-%d %H:%M:%S'
 
@@ -6,8 +8,8 @@ __standard_datetime_format = '%Y-%m-%d %H:%M:%S'
 def convert_timestamp_between_timezones(datetime_obj, timezone_from, timezone_to):
     """
     datetime_obj, datetime.datetime
-    timezone_from:str
-    timezone_to: str
+    timezone_from:str, example: US/Eastern
+    timezone_to: str, example: Utc
     return:datetiem.datetime obj of converted time at timezon_to
     """
     tz_from = pytz.timezone(timezone_from)
@@ -17,8 +19,8 @@ def convert_timestamp_between_timezones(datetime_obj, timezone_from, timezone_to
     return dt_to_tz
 
 
-def converts_to_standard_timezone(datetime_obj):
-    return datetime_obj.strptime(__standard_datetime_format)
+def strinfy_to_standard_timezone(datetime_obj):
+    return datetime_obj.strftime(__standard_datetime_format)
 
 
 def get_ny_timezone_name():
@@ -31,3 +33,39 @@ def get_utc_timezone_name():
 
 def set_datetime_obj_timezone(datetime_object, timezone_str):
     return datetime_object.replace(tzinfo=pytz.timezone(timezone_str))
+
+
+def to_unix(time_str, time_format=__standard_datetime_format):
+    """
+    by defaults support format of '%Y-%m-%d %H:%M:%S'
+    """
+    dt = datetime.datetime.strptime(time_str, time_format)
+    return calendar.timegm(dt.timetuple())
+
+
+def __from_unix_int(unix_int: int):
+    try:
+        return datetime.datetime.utcfromtimestamp(unix_int).strftime(__standard_datetime_format)
+    except Exception:
+        return None
+
+
+def from_unix(unix_int, time_format=__standard_datetime_format):
+    if len(str(unix_int)) not in [10, 13, 16, 19]:
+        raise Exception(f"unix time format is wrong {unix_int}")
+
+    # converts unix as unix timestamp with second
+    res = __from_unix_int(unix_int)
+    if not res:
+        # converts as with milli second
+        res = __from_unix_int(unix_int/1000)
+    if not res:
+        # converts as with microsecond
+        res = __from_unix_int(unix_int/1000000)
+    if not res:
+        # converts as with nano
+        res = __from_unix_int(unix_int/1000000000)
+
+    if not res:
+        raise Exception(f"rogue unix timestamp {unix_int}")
+    return res
