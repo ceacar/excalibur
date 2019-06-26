@@ -1,23 +1,26 @@
 import sys
 from functools import wraps
+import datetime
 def debug(func):
     @wraps(func)
     def wrap(*args, **kwargs):
         ag = [item for item in args]
         kg = [item for item in kwargs]
         sys.stderr.write(
-            ">{func_name} with args:{ag}, kwargs:{kg}\n"\
+            ">{func_name} with args:{ag}, kwargs:{kg} at {t}\n"\
             .format(
-                func_name = func.__qualname__,
-                ag = ag, kg = kg
+                func_name=func.__qualname__,
+                ag=ag, kg=kg,
+                t=datetime.datetime.now()
             )
         )
         res = func(*args, **kwargs)
         sys.stderr.write(
-            "\t-->{func_name}_result:{res}\n"\
+            "\t-->{func_name}_result:{res} at {t}\n"\
             .format(
-                func_name = func.__qualname__,
-                res = res
+                func_name=func.__qualname__,
+                res=res,
+                t=datetime.datetime.now()
             )
         )
 
@@ -35,11 +38,12 @@ def debug_with_prefix(prefix):
             ag = [item for item in args]
             kg = [item for item in kwargs]
             sys.stderr.write(
-                "{prefix}{func_name} with args:{ag}, kwargs:{kg}\n"\
+                "{prefix}{func_name} with args:{ag}, kwargs:{kg} at {t}\n"\
                 .format(
-                    prefix = prefix,
-                    func_name = func.__qualname__,
-                    ag = ag, kg = kg
+                    prefix=prefix,
+                    func_name=func.__qualname__,
+                    ag=ag, kg=kg,
+                    t=datetime.datetime.now()
                 )
             )
             res = func(*args, **kwargs)
