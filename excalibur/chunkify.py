@@ -62,7 +62,10 @@ def process_large_file(input_file_name, process_func, size):
 
 def __pick_file_name(fname, sequence_number):
     fname_arr = fname.split('.') #  assume file has appendix like a.csv
-    output_file_name = f'{".".join(fname_arr[:-1])}.{sequence_number}.{fname_arr[-1]}'
+    output_file_name = '{prefix}.{sequence_number}.{appendix}'.format(prefix=".".join(fname_arr[:-1]),
+                                                   sequence_number=sequence_number,
+                                                   appendix=fname_arr[-1])
+    # output_file_name = f'{".".join(fname_arr[:-1])}.{sequence_number}.{fname_arr[-1]}'
     return output_file_name
 
 
