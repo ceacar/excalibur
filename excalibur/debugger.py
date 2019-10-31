@@ -1,24 +1,32 @@
 import sys
 from functools import wraps
 import datetime
+
+
 def debug(func):
     @wraps(func)
     def wrap(*args, **kwargs):
         ag = [item for item in args]
         kg = [item for item in kwargs]
+        func_name = 'unknown'
+        try:
+            func_name = func.__qualname__
+        except AttributeError:
+            # python 2.7 doesn't have __qualname__
+            pass
         sys.stderr.write(
-            ">{func_name} with args:{ag}, kwargs:{kg} at {t}\n"\
+            ">{func_name} with args:{ag}, kwargs:{kg} at {t}\n"
             .format(
-                func_name=func.__qualname__,
+                func_name=func_name,
                 ag=ag, kg=kg,
                 t=datetime.datetime.now()
             )
         )
         res = func(*args, **kwargs)
         sys.stderr.write(
-            "\t-->{func_name}_result:{res} at {t}\n"\
+            "\t-->{func_name}_result:{res} at {t}\n"
             .format(
-                func_name=func.__qualname__,
+                func_name=func_name,
                 res=res,
                 t=datetime.datetime.now()
             )
@@ -26,6 +34,7 @@ def debug(func):
 
         return res
     return wrap
+
 
 def debug_with_prefix(prefix):
     """
@@ -37,11 +46,18 @@ def debug_with_prefix(prefix):
         def wrap(*args, **kwargs):
             ag = [item for item in args]
             kg = [item for item in kwargs]
+            func_name = 'unknown'
+            try:
+                func_name = func.__qualname__
+            except AttributeError:
+                # python 2.7 doesn't have __qualname__
+                pass
+
             sys.stderr.write(
-                "{prefix}{func_name} with args:{ag}, kwargs:{kg} at {t}\n"\
+                "{prefix}{func_name} with args:{ag}, kwargs:{kg} at {t}\n"
                 .format(
                     prefix=prefix,
-                    func_name=func.__qualname__,
+                    func_name=func_name,
                     ag=ag, kg=kg,
                     t=datetime.datetime.now()
                 )
@@ -52,14 +68,13 @@ def debug_with_prefix(prefix):
     return debug
 
 
-
 def debug_class(cls):
     """
     debug decorator for class
     """
     for key, val in vars(cls).items():
         if callable(val):
-            setattr(cls, key,debug(val))
+            setattr(cls, key, debug(val))
     return cls
 
 
@@ -67,8 +82,8 @@ class FuncCallCounter(type):
     """
     Meta class which decorates all the methods of the subclass using call_counter as the decorator
     example:
-	#inherited as metaclass
-	class A(metaclass=FuncCallCounter):
+    #inherited as metaclass
+    class A(metaclass=FuncCallCounter):
     def foo(self):
         pass
     def bar(self):
@@ -96,5 +111,3 @@ class FuncCallCounter(type):
             if callable(attributedict[attr]) and not attr.startswith("__"):
                 attributedict[attr] = cls.call_counter(attributedict[attr])
         return type.__new__(cls, clsname, superclasses, attributedict)
-
-

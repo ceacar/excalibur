@@ -19,53 +19,51 @@ import sys
 
 T = TypeVar('T')
 
+
 class MaxHeap:
-    def __init__(self, arr_of_obj: [T], key_func = lambda x: x):
-        self.get_key= key_func
+    def __init__(self, arr_of_obj, key_func=lambda x: x):
+        self.get_key = key_func
         self.arr = []
         for obj in arr_of_obj:
             self.insert(obj)
 
-    def swap_element(self, idx_from:int, idx_to: int):
+    def swap_element(self, idx_from, idx_to):
         temp = self.arr[idx_to]
         self.arr[idx_to] = self.arr[idx_from]
         self.arr[idx_from] = temp
 
-    def insert(self, obj: [T]):
+    def insert(self, obj):
         self.arr.append(obj)
         current_index = len(self.arr) - 1
-        parent_index = (current_index - 1)//2
+        parent_index = (current_index - 1) // 2
 
-        #if insertion element is smaller than parent, then bubble up until it doesn't or hit the root
+        # if insertion element is smaller than parent, then bubble up until it doesn't or hit the root
         while current_index > 0 and self.get_key(self.arr[parent_index]) < self.get_key(self.arr[current_index]):
             self.swap_element(current_index, parent_index)
-            current_index  = parent_index
-            parent_index = (current_index - 1)//2
+            current_index = parent_index
+            parent_index = (current_index - 1) // 2
 
     def __get_two_children(self, current_idx):
-        left_child_idx = 2*current_idx + 1
-        right_child_idx = 2*current_idx + 2
+        left_child_idx = 2 * current_idx + 1
+        right_child_idx = 2 * current_idx + 2
 
         left_child = self.get_key(self.arr[left_child_idx]) if left_child_idx < len(self.arr) - 1 else -1
         right_child = self.get_key(self.arr[right_child_idx]) if right_child_idx < len(self.arr) - 1 else -1
         return left_child_idx, right_child_idx, left_child, right_child
 
-
     def rebalance_tree(self):
         current_idx = 0
         left_child_idx, right_child_idx, left_child, right_child = self.__get_two_children(current_idx)
 
-        while current_idx < len(self.arr) - 1 \
-              and self.get_key(self.arr[current_idx]) < max(
-                  left_child, right_child
-              ):
+        while current_idx < len(self.arr) - 1 and self.get_key(self.arr[current_idx]) < max(
+                left_child, right_child):
             idx_to_swap = left_child_idx if self.get_key(self.arr[left_child_idx]) > self.get_key(self.arr[right_child_idx]) else right_child_idx
             self.swap_element(current_idx, idx_to_swap)
             current_idx = idx_to_swap
 
             left_child_idx, right_child_idx, left_child, right_child = self.__get_two_children(current_idx)
 
-    def pop_element(self) -> T:
+    def pop_element(self):
         res = None
 
         if len(self.arr) > 0:
@@ -81,12 +79,11 @@ class MaxHeap:
             sys.stderr.write("No more element to pop\n")
             return None
 
-    def ppformat(self) -> [[T]]:
+    def ppformat(self):
         res = []
         temp = []
-        current_idx = 0
         for idx in range(len(self.arr)):
-            if idx %2 == 1:
+            if idx % 2 == 1:
                 # a new level is encountered
                 res.append(temp)
                 temp = []
@@ -99,7 +96,3 @@ class MaxHeap:
         print('Heap Content:')
         for arr in res:
             print(arr)
-
-
-
-

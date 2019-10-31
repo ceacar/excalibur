@@ -1,3 +1,6 @@
+import binascii
+
+
 def split(str_with_new_lines):
     return str_with_new_lines.split('\n')
 
@@ -33,3 +36,7 @@ def ppformat_str_with_new_lines(str_with_new_lines):
     split_arr = split(str_with_new_lines)
     stripped = strip_str_arr(split_arr)
     return stripped
+
+def hex_string_to_string(hex_string):
+    hex_string = hex_string.replace(' ','')
+    return str(binascii.unhexlify(hex_string))

@@ -15,7 +15,9 @@ from excalibur.time_conversion import *
 from excalibur.requests_util import *
 from excalibur.string_manipulation import *
 from excalibur.web_scraper_utility import *
-from excalibur import exercise
+from . import exercise
 from excalibur import heap
+from excalibur.sftp import *
+from excalibur.coder import *
 
 name = "excalibur"

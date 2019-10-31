@@ -43,7 +43,7 @@ def to_unix(time_str, time_format=__standard_datetime_format):
     return calendar.timegm(dt.timetuple())
 
 
-def __from_unix_int(unix_int: int):
+def __from_unix_int(unix_int):
     try:
         return datetime.datetime.utcfromtimestamp(unix_int).strftime(__standard_datetime_format)
     except Exception:
@@ -52,7 +52,7 @@ def __from_unix_int(unix_int: int):
 
 def from_unix(unix_int, time_format=__standard_datetime_format):
     if len(str(unix_int)) not in [10, 13, 16, 19]:
-        raise Exception(f"unix time format is wrong {unix_int}")
+        raise Exception("unix time format is wrong {unix_int}".format(unix_int=unix_int))
 
     # converts unix as unix timestamp with second
     res = __from_unix_int(unix_int)
@@ -67,5 +67,5 @@ def from_unix(unix_int, time_format=__standard_datetime_format):
         res = __from_unix_int(unix_int/1000000000)
 
     if not res:
-        raise Exception(f"rogue unix timestamp {unix_int}")
+        raise Exception("rogue unix timestamp {unix_int}".format(unix_int=unix_int))
     return res

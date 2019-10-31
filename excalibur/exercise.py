@@ -1,5 +1,4 @@
-#UTILITY CLASSES AND METHOD FOR GRAPH
-
+# UTILITY CLASSES AND METHOD FOR GRAPH
 import string
 
 
@@ -15,16 +14,16 @@ class Vertice:
 
 
 class Graph:
-    def __init__(self, vertices = []):
+    def __init__(self, vertices=[]):
         self.vertices = vertices
 
-    def get_name_from_vertices_arr(self) -> None:
+    def get_name_from_vertices_arr(self):
         res = []
         for vert in self.vertices:
             res.append(vert.name)
         return res
 
-    def generate_graph(self) -> dict:
+    def generate_graph(self):
         graph = {}
         for vert in self.vertices:
             neighbors = vert.neighbors
@@ -34,7 +33,7 @@ class Graph:
                 graph[vert.name].append(nei.name)
         return graph
 
-    def get_edges(self) -> [(Vertice, Vertice)]:
+    def get_edges(self):
         self.edges = []
         for vert in self.vertices:
             neighbors = vert.neighbors
@@ -43,7 +42,7 @@ class Graph:
 
         return self.edges
 
-    def get_edges_only_name(self) -> [(str,str)]:
+    def get_edges_only_name(self):
 
         edge_name_only = []
         for edge_pair in self.edges:
@@ -82,7 +81,5 @@ class Graph:
 def init_graph(size=26):
     res = []
     for char in string.ascii_lowercase[:size]:
-        res.append(Vertice(name = char))
+        res.append(Vertice(name=char))
     return res
-
-
