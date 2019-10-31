@@ -1,3 +1,6 @@
+import gzip
+
+
 def get_gzip_uncompressed_file_size(file_name):
     """
     this function will return the uncompressed size of a gzip file

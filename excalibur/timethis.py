@@ -1,4 +1,6 @@
 import time
+
+
 def timethis(func, *args):
     """
     this function provides a simple time function which will return func object and time it consumed
