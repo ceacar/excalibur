@@ -20,4 +20,7 @@ from excalibur import heap
 from excalibur.sftp import *
 from excalibur.coder import *
 
+from excalibur.proxy import *
+from excalibur.proxy_parser import *
+
 name = "excalibur"
