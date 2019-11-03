@@ -2,37 +2,28 @@ import struct
 import excalibur.logger as logger
 
 
-cmd_list = {
-    '3906': 'version_number',
-    '6f1f': 'heartbeat',
-    '711f': 'server_heartbeat_response',
-    '6b07': 'login_page_ok',
-    '3706': 'server_login_page_ok',
-    '2923': 'user_login',
-    '2b23': 'server_login_respond',
-    'fb09': 'logdata2?',
-    '439c': 'user_request_profile?439c',  # not sure about this
-    '4406': 'profile_data?4406',
-    'e520': 'profile_data?e520',
-    'f477': 'profile_data?f477',
-    '7868': 'profile_data?7868',
-    '9c48': 'profile_data?9c48',
-    '499c': 'client_acknowledge?',
-}
-
-
 class Packet:
     """
     this class is meant to be reused by only 1 user
     """
 
     def get_log_message(self, content):
-        self.log.info("[{packet_length}][{unknown}][{cmd}] {content}".format(
+        """
+        use <- to indicated receving from client
+        use -> to indicate sending to client
+        """
+        origin_tag = " <- "
+
+        if self.origin == "server":
+            origin_tag = " -> "
+
+        return "{origin}[{packet_length}][{unknown}][{cmd}] {content}".format(
             packet_length=self.packet_length,
+            origin=origin_tag,
             unknown=self.unknown,
             cmd=self.cmd,
             content=content
-        ))
+        )
 
     def emit_message(self, content):
         self.log.info(self.get_log_message(content))
@@ -64,8 +55,8 @@ class Packet:
         cmd_hex = self.data_hex[8:12]
         cmd = cmd_hex
 
-        if cmd_hex in cmd_list:
-            cmd = cmd_list[cmd_hex]
+        if cmd_hex in self.cmd_list:
+            cmd = self.cmd_list[cmd_hex]
 
         return cmd
 
@@ -93,29 +84,28 @@ class Packet:
 
     @property
     def payload(self):
-        return self.data_hex[6:]
+        return self.data_hex[12:]
 
     def parse(self):
         try:
-            # prints debug raw message
             self.log.debug(self.data_hex)
-            # self.log.debug(self.get_log_message(self.data_hex))
-
             cmd_raw = self.cmd
-            self.log.debug('cmd_raw {}'.format(cmd_raw))
-            if cmd_raw in cmd_list:
-                cmd = cmd_list[cmd_raw]
+            # self.log.debug('cmd_raw {}'.format(cmd_raw))
+            if cmd_raw in self.cmd_list:
+                cmd = self.cmd_list[cmd_raw]
                 if cmd in self.cmd_to_func:
                     func = self.cmd_to_func[cmd]
                     self.log.debug(func)
                     func()
                 else:
                     self.parse_unknown()
+            else:
+                self.parse_unknown()
         except Exception as e:
             self.log.error('{}, failed to parse {}'.format(str(e), self.data_hex))
 
     def parse_unknown(self):
-        self.emit_message("payload")
+        self.emit_message(self.payload)
 
     def parse_version_number(self):
         version = self.payload()
@@ -163,10 +153,30 @@ class Packet:
 
     def __init__(self, data, port, origin):
         __default_logging_format = '%(asctime)s|%(levelname)s|%(message)s'
+        # __default_logging_format = '%(message)s'
         self.log = logger.getlogger(logger_format=__default_logging_format)
         self.data = None
         self.port = None
         self.origin = None
+
+        self.cmd_list = {
+            '3906': 'version_number',
+            '6f1f': 'heartbeat',
+            '711f': 'server_heartbeat_response',
+            '6b07': 'login_page_ok',
+            '3706': 'server_login_page_ok',
+            '2923': 'user_login',
+            '2b23': 'server_login_respond',
+            'fb09': 'logdata2?',
+            '439c': 'user_request_profile?439c',  # not sure about this
+            '4406': 'profile_data?4406',
+            'e520': 'profile_data?e520',
+            'f477': 'profile_data?f477',
+            '7868': 'profile_data?7868',
+            '9c48': 'profile_data?9c48',
+            '499c': 'client_acknowledge?',
+        }
+
         self.cmd_to_func = {
             'version_number': self.parse_version_number,
             'heartbeat': self.parse_heartbeat,
