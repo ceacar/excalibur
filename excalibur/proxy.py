@@ -1,18 +1,21 @@
 import socket
 import threading
 import proxy_parser
-import importlib
+import ctypes
 
 
 class ProxyBase(threading.Thread):
 
     def parse_data(self, data, tag):
-        try:
-            importlib.reload(proxy_parser)
-            proxy_parser.parse(data, self.port, tag)
-        except Exception as e:
-            print('error parsing {} data:{}'.format(tag, data))
-            print(e)
+        proxy_parser.parse(data, self.port, tag)
+
+    def raise_exception(self):
+        # adds ability to raise exception for quitting cmd
+        thread_id = ctypes.c_long(self.ident)
+        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, ctypes.py_object(SystemExit))
+        if res > 1:
+            ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
+            print('Exception raise failure')
 
 
 class ProxyToServer(ProxyBase):
@@ -56,8 +59,8 @@ class ClientToProxy(ProxyBase):
                 self.server.sendall(data)
 
 
-class Proxy(threading.Thread):
-    def __init__(self, from_host, from_port,  to_host, to_port):
+class Proxy(ProxyBase):
+    def __init__(self, from_host, from_port, to_host, to_port):
         super(Proxy, self).__init__()
         # from_host from_port is the proxy listening port
         # to_host to_port is the forwarding port of proxy to the actual server
@@ -73,6 +76,13 @@ class Proxy(threading.Thread):
         self.client_to_proxy = None
         self.proxy_to_server = None
 
+    def kill(self):
+        if self.client_to_proxy:
+            self.client_to_proxy.raise_exception()
+        if self.proxy_to_server:
+            self.proxy_to_server.raise_exception()
+        self.raise_exception()
+
     def run(self):
         while True:
             self.client_to_proxy = ClientToProxy(self.from_host, self.from_port)  # point client to my port
@@ -87,7 +97,6 @@ class Proxy(threading.Thread):
 
 if __name__ == '__main__':
     import sys
-    import os
     _, from_host, from_port, to_host, to_port = sys.argv
     print('Starting Proxy {from_host}:{from_port} -> {to_host}:{to_port}'.format(
         from_host=from_host,
@@ -100,10 +109,10 @@ if __name__ == '__main__':
     proxy.start()
 
     while True:
-        try:
-            cmd = input('$ ')
-            if cmd[:4] == 'quit':
-                print('Exiting on cmd {cmd}'.format(cmd=cmd))
-                os.exit(0)
-        except Exception as e:
-            print(e)
+        cmd = input('$ ')
+        if cmd[:4] == 'quit':
+            break
+
+    proxy.kill()
+    print('Exiting on cmd {cmd}'.format(cmd=cmd))
+    raise Exception('')
