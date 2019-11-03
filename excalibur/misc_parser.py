@@ -1,6 +1,5 @@
 import struct
 import excalibur.logger as logger
-import importlib
 
 
 cmd_list = {
@@ -103,10 +102,12 @@ class Packet:
             # self.log.debug(self.get_log_message(self.data_hex))
 
             cmd_raw = self.cmd
+            self.log.debug('cmd_raw {}'.format(cmd_raw))
             if cmd_raw in cmd_list:
                 cmd = cmd_list[cmd_raw]
                 if cmd in self.cmd_to_func:
                     func = self.cmd_to_func[cmd]
+                    self.log.debug(func)
                     func()
                 else:
                     self.parse_unknown()
