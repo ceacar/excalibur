@@ -24,6 +24,7 @@ setuptools.setup(
         # 'paramiko',  # some platform cannot install this package
         'pytz',
         'python-dateutil',
+        'typing',
     ],
 
 )
