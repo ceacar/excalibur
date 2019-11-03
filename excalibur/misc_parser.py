@@ -17,11 +17,12 @@ class Packet:
         if self.origin == "server":
             origin_tag = " -> "
 
-        return "{origin}[{packet_length}][{unknown}][{cmd}] {content}".format(
+        return "{origin}[{packet_length}][{unknown}][{cmd}:{raw_cmd}] {content}".format(
             packet_length=self.packet_length,
             origin=origin_tag,
             unknown=self.unknown,
-            cmd=self.cmd,
+            cmd=self.cmd.ljust(25),  # ljust to align output
+            raw_cmd=self.raw_cmd,
             content=content
         )
 
@@ -50,10 +51,14 @@ class Packet:
         return self.__unpack_base('<h', hex_string)
 
     @property
+    def raw_cmd(self):
+        return self.data_hex[8:12]
+
+    @property
     def cmd(self):
         # if no cmd can be parsed, return just the hex
-        cmd_hex = self.data_hex[8:12]
-        cmd = cmd_hex
+        cmd_hex = self.raw_cmd()
+        cmd = '????'
 
         if cmd_hex in self.cmd_list:
             cmd = self.cmd_list[cmd_hex]
@@ -89,16 +94,12 @@ class Packet:
     def parse(self):
         try:
             self.log.debug(self.data_hex)
-            cmd_raw = self.cmd
+            cmd = self.cmd
             # self.log.debug('cmd_raw {}'.format(cmd_raw))
-            if cmd_raw in self.cmd_list:
-                cmd = self.cmd_list[cmd_raw]
-                if cmd in self.cmd_to_func:
-                    func = self.cmd_to_func[cmd]
-                    self.log.debug(func)
-                    func()
-                else:
-                    self.parse_unknown()
+            if cmd in self.cmd_to_func:
+                func = self.cmd_to_func[cmd]
+                self.log.debug(func)
+                func()
             else:
                 self.parse_unknown()
         except Exception as e:
@@ -151,7 +152,7 @@ class Packet:
         # [server 4003] 0a00 f003 3706 8535000001000000 # server reply login page ok?
         self.emit_message("server_login_page_ok {}".format(self.payload))
 
-    def __init__(self, data, port, origin):
+    def __init__(self):
         __default_logging_format = '%(asctime)s|%(levelname)s|%(message)s'
         # __default_logging_format = '%(message)s'
         self.log = logger.getlogger(logger_format=__default_logging_format)
@@ -169,12 +170,18 @@ class Packet:
             '2b23': 'server_login_respond',
             'fb09': 'logdata2?',
             '439c': 'user_request_profile?439c',  # not sure about this
-            '4406': 'profile_data?4406',
-            'e520': 'profile_data?e520',
-            'f477': 'profile_data?f477',
-            '7868': 'profile_data?7868',
-            '9c48': 'profile_data?9c48',
+            '4406': 'profile_data?',
+            'e520': 'profile_data?',
+            'f477': 'profile_data?',
+            '7868': 'profile_data?',
+            '9c48': 'profile_data?',
             '499c': 'client_acknowledge?',
+            '4d0a': 'ip_with_port?',  # x.x.x.x:xxxx
+            '054f': 'internal_ip_port?',
+            '4708': 'timestamp_or_udp_ip_port?',
+            '2f23': 'timestamp_or_udp_response',
+            '4007': 'request_garage_page',
+            '8535': 'transmitting_or_info',
         }
 
         self.cmd_to_func = {
@@ -198,7 +205,7 @@ def parse_packet(data, port, origin):
     """
     global __packet_class
     if not __packet_class:
-        __packet_class = Packet(data, port, origin)
+        __packet_class = Packet()
 
     __packet_class.set_packet(data, port, origin)
-    return __packet_class.parse()
+    __packet_class.parse()
