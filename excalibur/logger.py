@@ -5,10 +5,10 @@ __logger_instance = None
 __default_logging_format = '%(asctime)s|%(levelname)s|%(filename)s|%(module)s|%(funcName)s|%(message)s'
 
 
-def __get_singleton_stdout_logger():
+def __get_singleton_stdout_logger(logger_format=__default_logging_format):
     global __logger_instance
     if not __logger_instance:
-        __logger_instance = get_stdout_logger()
+        __logger_instance = get_stdout_logger(logger_format=logger_format)
     return __logger_instance
 
 
@@ -63,8 +63,8 @@ def get_file_logger(log_file_path='/tmp/logger.log', logging_level=logging.DEBUG
     return __get_logger(file_handler, level=logging_level)
 
 
-def getlogger():
+def getlogger(logger_format=__default_logging_format):
     """
     returns a logger that is shared across module to print to std
     """
-    return __get_singleton_stdout_logger()
+    return __get_singleton_stdout_logger(logger_format=logger_format)

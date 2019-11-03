@@ -1,5 +1,6 @@
 import struct
 import excalibur.logger as logger
+import importlib
 
 
 cmd_list = {
@@ -61,7 +62,7 @@ class Packet:
     @property
     def cmd(self):
         # if no cmd can be parsed, return just the hex
-        cmd_hex = self.data_hex[12:16]
+        cmd_hex = self.data_hex[8:12]
         cmd = cmd_hex
 
         if cmd_hex in cmd_list:
@@ -96,19 +97,21 @@ class Packet:
         return self.data_hex[6:]
 
     def parse(self):
-        # prints debug raw message
-        self.log.debug(self.data_hex)
-        self.log.debug(self.get_log_message(self.data_hex))
+        try:
+            # prints debug raw message
+            self.log.debug(self.data_hex)
+            # self.log.debug(self.get_log_message(self.data_hex))
 
-        cmd_raw = self.cmd
-        print("cmd_raw: {}".format(cmd_raw))
-        if cmd_raw in cmd_list:
-            cmd = cmd_list[cmd_raw]
-            if cmd in self.cmd_to_func:
-                func = self.cmd_to_func[cmd]
-                func()
-            else:
-                self.parse_unknown()
+            cmd_raw = self.cmd
+            if cmd_raw in cmd_list:
+                cmd = cmd_list[cmd_raw]
+                if cmd in self.cmd_to_func:
+                    func = self.cmd_to_func[cmd]
+                    func()
+                else:
+                    self.parse_unknown()
+        except Exception as e:
+            self.log.error('{}, failed to parse {}'.format(str(e), self.data_hex))
 
     def parse_unknown(self):
         self.emit_message("payload")
@@ -127,6 +130,14 @@ class Packet:
         self.emit_message("user_id:{user_id} user_password_sha:{password_sha} unknown:{unknown}".format(
             user_id=user_id,
             password_sha=password_sha,
+            unknown=unknown_part,
+        ))
+
+    def server_login_respond(self):
+        user_id = self.payload[8:30]  # seems have 8 0 as padding
+        unknown_part = self.payload[34:]  # ?? this could be time of the login
+        self.emit_message("user_id:{user_id} unknown:{unknown}".format(
+            user_id=user_id,
             unknown=unknown_part,
         ))
 
@@ -150,7 +161,8 @@ class Packet:
         self.emit_message("server_login_page_ok {}".format(self.payload))
 
     def __init__(self, data, port, origin):
-        self.log = logger.getlogger()
+        __default_logging_format = '%(asctime)s|%(levelname)s|%(message)s'
+        self.log = logger.getlogger(logger_format=__default_logging_format)
         self.data = None
         self.port = None
         self.origin = None
@@ -175,7 +187,7 @@ def parse_packet(data, port, origin):
     """
     global __packet_class
     if not __packet_class:
-        __packet_class = Packet()
+        __packet_class = Packet(data, port, origin)
 
     __packet_class.set_packet(data, port, origin)
     return __packet_class.parse()

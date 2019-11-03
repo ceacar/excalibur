@@ -22,5 +22,6 @@ from excalibur.coder import *
 
 from excalibur.proxy import *
 from excalibur.proxy_parser import *
+from . import misc_parser
 
 name = "excalibur"

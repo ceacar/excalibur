@@ -8,12 +8,7 @@ proxy_parser.py is providing parser for proxy.Proxy
 
 
 def parse(data, port, tag):
-    try:
-        importlib.reload(excalibur.misc_parser)
-        return excalibur.misc_parser.parse_packet(data, port, tag)
-    except Exception as e:
-        print('error parsing {} data:{}'.format(tag, data))
-        print(e)
+    return excalibur.misc_parser.parse_packet(data, port, tag)
 
 
 __decoder_list = ['ascii', 'utf-8', 'utf-16', 'utf-32', 'euc-kr', 'ISO-2022-KR']
