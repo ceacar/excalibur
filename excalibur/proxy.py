@@ -1,13 +1,13 @@
 import socket
 import threading
-import proxy_parser
+import excalibur
 import ctypes
 
 
 class ProxyBase(threading.Thread):
 
     def parse_data(self, data, tag):
-        proxy_parser.parse(data, self.port, tag)
+        excalibur.proxy_parser.parse(data, self.port, tag)
 
     def raise_exception(self):
         # adds ability to raise exception for quitting cmd

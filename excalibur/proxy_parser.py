@@ -40,7 +40,7 @@ def parse_this(hex_data, littleendian=True):
         if littleendian:
             struct_prefix = '<'
 
-        __struct_type_list = byte_struct[len(data_hex) / 2]
+        __struct_type_list = byte_struct[int(math.ceil(len(data_hex) / 2))]
 
         for struct_type in __struct_type_list:
             struct_type_string = struct_prefix + struct_type

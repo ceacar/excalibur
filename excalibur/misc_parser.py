@@ -17,12 +17,18 @@ class Packet:
         if self.origin == "server":
             origin_tag = " -> "
 
-        return "{origin}[{packet_length}][{unknown}][{cmd}:{raw_cmd}] {content}".format(
+        cmd_adjusted = "{cmd}:{raw_cmd}".format(
+            cmd=self.cmd,
+            raw_cmd=self.raw_cmd,
+        ).ljust(25, '-')  # ljust to align output
+
+        cmd_string = '[{}]'.format(cmd_adjusted)
+
+        return "{origin}[{packet_length}][{unknown}]{cmd} {content}".format(
             packet_length=self.packet_length,
             origin=origin_tag,
             unknown=self.unknown,
-            cmd=self.cmd.ljust(25),  # ljust to align output
-            raw_cmd=self.raw_cmd,
+            cmd=cmd_string,
             content=content
         )
 
@@ -57,7 +63,7 @@ class Packet:
     @property
     def cmd(self):
         # if no cmd can be parsed, return just the hex
-        cmd_hex = self.raw_cmd()
+        cmd_hex = self.raw_cmd
         cmd = '????'
 
         if cmd_hex in self.cmd_list:
@@ -98,7 +104,6 @@ class Packet:
             # self.log.debug('cmd_raw {}'.format(cmd_raw))
             if cmd in self.cmd_to_func:
                 func = self.cmd_to_func[cmd]
-                self.log.debug(func)
                 func()
             else:
                 self.parse_unknown()
@@ -109,11 +114,11 @@ class Packet:
         self.emit_message(self.payload)
 
     def parse_version_number(self):
-        version = self.payload()
+        version = self.payload
         self.emit_message("version_number:{version}".format(version=version))
 
     def parse_heartbeat(self):
-        self.emit_message("heartbeat:{self.payload}".format(self.payload))
+        self.emit_message("{self.payload}".format(self.payload))
 
     def parse_user_credentials(self):
         user_id = self.payload[8:30]  # seems have 8 0 as padding
@@ -142,15 +147,15 @@ class Packet:
         ))
 
     def parse_server_heartbeat_response(self):
-        self.emit_message("server_heartbeat {}".format(self.payload))
+        self.emit_message("{}".format(self.payload))
 
     def parse_login_page_ok(self):
         # [client 45555] 0a00 f003 6b07 0000000001000000 # client sends login page ok message
-        self.emit_message("login_page_ok {}".format(self.payload))
+        self.emit_message(self.payload)
 
     def parse_server_login_page_ok(self):
         # [server 4003] 0a00 f003 3706 8535000001000000 # server reply login page ok?
-        self.emit_message("server_login_page_ok {}".format(self.payload))
+        self.emit_message("{}".format(self.payload))
 
     def __init__(self):
         __default_logging_format = '%(asctime)s|%(levelname)s|%(message)s'
