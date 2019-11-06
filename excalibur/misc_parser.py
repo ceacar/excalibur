@@ -101,7 +101,7 @@ class Packet:
 
     def parse(self):
         try:
-            self.log.debug(self.data_hex)
+            self.log.debug(self.origin + '|' + self.data_hex)
             cmd = self.cmd
             # self.log.debug('cmd_raw {}'.format(cmd_raw))
             if cmd in self.cmd_to_func:
