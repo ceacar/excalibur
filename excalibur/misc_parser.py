@@ -33,7 +33,9 @@ class Packet:
         )
 
     def emit_message(self, content):
-        self.log.info(self.get_log_message(content))
+        msg = self.get_log_message(content)
+        self.log.info(msg)
+        return msg
 
     def set_packet(self, data, port, origin):
         self.data = data
@@ -104,58 +106,85 @@ class Packet:
             # self.log.debug('cmd_raw {}'.format(cmd_raw))
             if cmd in self.cmd_to_func:
                 func = self.cmd_to_func[cmd]
-                func()
+                return func()
             else:
-                self.parse_unknown()
+                return self.parse_unknown()
         except Exception as e:
             self.log.error('{}, failed to parse {}'.format(str(e), self.data_hex))
 
     def parse_unknown(self):
-        self.emit_message(self.payload)
+        msg = self.payload
+        return self.emit_message(msg)
 
     def parse_version_number(self):
         version = self.payload
-        self.emit_message("version_number:{version}".format(version=version))
+        msg = "version_number:{version}".format(version=version)
+        return self.emit_message(msg)
 
     def parse_heartbeat(self):
-        self.emit_message("{self.payload}".format(self.payload))
+        msg = self.payload
+        return self.emit_message(msg)
 
     def parse_user_credentials(self):
         user_id = self.payload[8:30]  # seems have 8 0 as padding
         password_sha = self.payload[34:98]  # seems have 4 0 as padding
         unknown_part = self.payload[98:]  # ?? this could be time of the login
-        self.emit_message("user_id:{user_id} user_password_sha:{password_sha} unknown:{unknown}".format(
+        msg = "user_id:{user_id} user_password_sha:{password_sha} unknown:{unknown}".format(
             user_id=user_id,
             password_sha=password_sha,
             unknown=unknown_part,
-        ))
+        )
+        return self.emit_message(msg)
 
     def server_login_respond(self):
         user_id = self.payload[8:30]  # seems have 8 0 as padding
         unknown_part = self.payload[34:]  # ?? this could be time of the login
-        self.emit_message("user_id:{user_id} unknown:{unknown}".format(
+        msg = "user_id:{user_id} unknown:{unknown}".format(
             user_id=user_id,
             unknown=unknown_part,
-        ))
+        )
+        return self.emit_message(msg)
 
     def parse_server_user_login_response(self):
         user_id = self.payload[8:30]  # seems have 8 0 as padding
         unknown_part = self.payload[34:]  # ?? this could be time of the login
-        self.emit_message("user_id:{user_id} unknown:{unknown}".format(
+        msg = "user_id:{user_id} unknown:{unknown}".format(
             user_id=user_id,
             unknown=unknown_part,
-        ))
+        )
+        return self.emit_message(msg)
 
     def parse_server_heartbeat_response(self):
-        self.emit_message("{}".format(self.payload))
+        msg = self.payload
+        return self.emit_message(msg)
 
     def parse_login_page_ok(self):
         # [client 45555] 0a00 f003 6b07 0000000001000000 # client sends login page ok message
-        self.emit_message(self.payload)
+        msg = self.payload
+        return self.emit_message(msg)
 
     def parse_server_login_page_ok(self):
         # [server 4003] 0a00 f003 3706 8535000001000000 # server reply login page ok?
-        self.emit_message("{}".format(self.payload))
+        msg = "{}".format(self.payload)
+        return self.emit_message(msg)
+
+    def parse_user_info(self):
+        user_name_length = self.__unpack_base('<h', self.payload[4:6])  # 08 means name is 8 bytes long
+        user_name_hex = self.payload[6:38]  # 16 bytes is name
+        user_name = self.__unpack_base('<ssssssssssssssss', user_name_hex)
+        msg = "len:{length} user_name:{user_name}".format(
+            user_name=user_name,
+            length=user_name_length
+        )
+
+        return self.emit_message(msg)
+
+    def parse_data_packet(self):
+        if self.unknown == '8535' and self.cmd == '0000':
+            # this is a user info packet
+            return self.parse_user_info()
+        else:
+            return self.parse_unknown()
 
     def __init__(self):
         __default_logging_format = '%(asctime)s|%(levelname)s|%(message)s'
@@ -174,7 +203,7 @@ class Packet:
             '2923': 'user_login',
             '2b23': 'server_login_respond',
             'fb09': 'logdata2?',
-            '439c': 'user_request_profile?439c',  # not sure about this
+            '439c': 'log_data4?439c',  # not sure about this
             '4406': 'profile_data?',
             'e520': 'profile_data?',
             'f477': 'profile_data?',
@@ -186,7 +215,8 @@ class Packet:
             '4708': 'timestamp_or_udp_ip_port?',
             '2f23': 'timestamp_or_udp_response',
             '4007': 'request_garage_page',
-            '8535': 'transmitting_or_info',
+            '8535': 'user_info',
+            '0000': 'data_transfer',
         }
 
         self.cmd_to_func = {
@@ -198,6 +228,8 @@ class Packet:
             'login_page_ok': self.parse_login_page_ok,
             'server_login_page_ok': self.parse_server_login_page_ok,
             'logindata2': self.parse_unknown,
+            'user_info': self.parse_user_info,
+            'data_transfer': self.parse_data_packet,
         }
 
 

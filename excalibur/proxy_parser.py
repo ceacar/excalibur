@@ -25,6 +25,10 @@ byte_struct = {
 }
 
 
+def unpack_this(format, data_hex):
+    return struct.unpack_from(format, bytearray.fromhex(data_hex))
+
+
 def parse_this(hex_data, littleendian=True):
     """
     this method would try to parse the hex data with anyformat, see what make sense
