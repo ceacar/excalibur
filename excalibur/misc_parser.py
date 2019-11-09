@@ -1,5 +1,6 @@
 import struct
 import excalibur.logger as logger
+import excalibur
 
 
 class Packet:
@@ -48,15 +49,32 @@ class Packet:
         return bytearray.fromhex(hex_string)
 
     def __unpack_base(self, format, hex_string):
-        temp = struct.unpack_from(format, bytearray.fromhex(hex_string))
-        res = temp[0]
+        res = struct.unpack_from(format, bytearray.fromhex(hex_string))
         return res
 
+    def unpack_string(self, format, hex_string, decoder="utf-8"):
+        res = self.__unpack_base(format, hex_string)
+        decoded_arr = [unpacked.decode(decoder) for unpacked in res]
+        str_output = ''.join(d if d != '\x00' else '' for d in decoded_arr)  # \x00 means null
+        return str_output
+
+    def auto_unpack_as_string(self, hex_string, decoder="utf-8"):
+        format = '<' + 's' * int(len(hex_string) / 2)
+        return self.unpack_string(format, hex_string, decoder)
+
     def hex_to_char(self, hex_string):
-        return self.__unpack_base('<c', hex_string)
+        return self.__unpack_base('<c', hex_string)[0]
 
     def hex_to_short(self, hex_string):
-        return self.__unpack_base('<h', hex_string)
+        return self.__unpack_base('<h', hex_string)[0]
+
+    def auto_unpack_as_int(self, hex_string):
+        format = '<' + 'i' * int(len(hex_string) / 8)
+        return self.__unpack_base(format, hex_string)
+
+    def auto_unpack_as_short(self, hex_string):
+        format = '<' + 'h' * int(len(hex_string) / 4)
+        return self.__unpack_base(format, hex_string)
 
     @property
     def raw_cmd(self):
@@ -169,22 +187,38 @@ class Packet:
         return self.emit_message(msg)
 
     def parse_user_info(self):
-        user_name_length = self.__unpack_base('<h', self.payload[4:6])  # 08 means name is 8 bytes long
-        user_name_hex = self.payload[6:38]  # 16 bytes is name
-        user_name = self.__unpack_base('<ssssssssssssssss', user_name_hex)
-        msg = "len:{length} user_name:{user_name}".format(
+        # user_name_length = self.__unpack_base('<h', self.payload[4:6])  # 08 means name is 8 bytes long?
+        uuid = self.payload[:6]
+        user_name_hex = self.payload[6:38]  # 16 bytes is name  data_hex[16:50]
+        user_name = self.unpack_string('<ssssssssssssssss', user_name_hex)
+        rank_exp_hex = self.data_hex[136:144]
+        rank_exp = self.auto_unpack_as_int(rank_exp_hex)
+
+        msg = "uuid:[{uuid}], user_name:{user_name}, rank_exp:{rank_exp}".format(
+            uuid=uuid,
             user_name=user_name,
-            length=user_name_length
+            rank_exp=rank_exp,
+            # length=user_name_length
         )
+        # TODO: unfinished
 
         return self.emit_message(msg)
 
     def parse_data_packet(self):
-        if self.unknown == '8535' and self.cmd == '0000':
+        if self.packet_length == 1702 and self.unknown == '8535' and self.raw_cmd == '0000':
             # this is a user info packet
             return self.parse_user_info()
         else:
             return self.parse_unknown()
+
+    def parse_timestamp(self):
+        import pdb
+        pdb.set_trace()
+        timestamp_hex = self.payload[33:41]
+        unpack_temp = self.auto_unpack_as_int(timestamp_hex)
+        timestamp_unix_time = unpack_temp[0]
+        dt = excalibur.time_conversion.from_unix(timestamp_unix_time)
+        self.emit_message("timestamp:{}, payload:{}".format(dt, self.payload))
 
     def __init__(self):
         __default_logging_format = '%(asctime)s|%(levelname)s|%(message)s'
@@ -211,12 +245,33 @@ class Packet:
             '9c48': 'profile_data?',
             '499c': 'client_acknowledge?',
             '4d0a': 'ip_with_port?',  # x.x.x.x:xxxx
-            '054f': 'internal_ip_port?',
+            '4f05': 'internal_ip_port?',
             '4708': 'timestamp_or_udp_ip_port?',
-            '2f23': 'timestamp_or_udp_response',
+            '2f23': 'timestamp_or_udp_response',  # did server timestamp the client ack profile
             '4007': 'request_garage_page',
             '8535': 'user_info',
             '0000': 'data_transfer',
+            'e807': 'client_ack_profile',
+            '2207': '2f23_cli_ack',
+            '350a': 'user_key_bind_cli_req',
+            '0109': 'srv_send_user_key_bind',
+            '2e0a': 'unknown_request',
+            '3e08': 'friend_list_req_related',
+            '2000': 'unknown_request',
+            '2c06': 'change_of_keybind',
+            '8e06': 'logout??',
+            '6806': 'garage_1st_page',
+            '3c07': 'garage_page_count',
+            '0621': 'gasha??',
+            '5a09': 'traing_ground_garage_req',
+            '5807': 'friend_search',
+            '6008': 'time_sync_req?',
+            'd30a': 'battle_heart_beat',
+            '5607': 'gasha_draw?',
+            '1e07': 'mb_draw',
+            'b005': 'gp_draw',
+            '1708': 'custom_draw',
+            '0c06': 'set_battle_suit',
         }
 
         self.cmd_to_func = {
@@ -230,6 +285,8 @@ class Packet:
             'logindata2': self.parse_unknown,
             'user_info': self.parse_user_info,
             'data_transfer': self.parse_data_packet,
+            'client_ack_profile': self.parse_unknown,
+            # 'timestamp_or_udp_response': self.parse_timestamp,  # did server timestamp the client ack profile
         }
 
 

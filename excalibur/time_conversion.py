@@ -58,13 +58,13 @@ def from_unix(unix_int, time_format=__standard_datetime_format):
     res = __from_unix_int(unix_int)
     if not res:
         # converts as with milli second
-        res = __from_unix_int(unix_int/1000)
+        res = __from_unix_int(unix_int / 1000)
     if not res:
         # converts as with microsecond
-        res = __from_unix_int(unix_int/1000000)
+        res = __from_unix_int(unix_int / 1000000)
     if not res:
         # converts as with nano
-        res = __from_unix_int(unix_int/1000000000)
+        res = __from_unix_int(unix_int / 1000000000)
 
     if not res:
         raise Exception("rogue unix timestamp {unix_int}".format(unix_int=unix_int))
