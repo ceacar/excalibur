@@ -24,5 +24,7 @@ from excalibur.proxy import *
 from excalibur.proxy_parser import *
 from . import misc_parser
 from . import logger
+from . import hex_utility
+from . import encoding
 
 name = "excalibur"
