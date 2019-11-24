@@ -1,5 +1,6 @@
 import excalibur.logger as logger
 import excalibur
+import os
 
 
 class Packet:
@@ -400,13 +401,16 @@ def parse_packet(data, port, origin):
 
 
 def parse_log(log_path):
-    with open(log_path+'.translated', 'w') as write_file:
-        with open(log_path, 'r') as tempf:
-            packet = Packet()
-            for line in tempf:
-                if 'DEBUG' in line:
-                    _, _, origin, data_hex = line.rstrip().strip().split('|')
-                    packet.set_packet(bytearray.fromhex(data_hex), '1234', origin)
-                    response = packet.parse()
-                    write_file.write(line)
-                    write_file.write('\t' + response + '\n')
+    log_path = os.path.expanduser(log_path)
+    with open(log_path, 'r') as tempf:
+        packet = Packet()
+        __default_logging_format = '%(asctime)s|%(levelname)s|%(message)s'
+        # write log to file
+        packet.log = logger.get_file_logger(
+            log_file_path=log_path+'.translated', logger_format=__default_logging_format)
+
+        for line in tempf:
+            if 'DEBUG' in line:
+                _, _, origin, data_hex = line.rstrip().strip().split('|')
+                packet.set_packet(bytearray.fromhex(data_hex), '1234', origin)
+                response = packet.parse()
