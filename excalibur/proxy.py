@@ -2,6 +2,11 @@ import socket
 import threading
 import excalibur
 import ctypes
+import excalibur.logger as logger
+
+
+__default_logging_format = '%(asctime)s|%(levelname)s|%(message)s'
+log = logger.getlogger(logger_format=__default_logging_format)
 
 
 class ProxyBase(threading.Thread):
@@ -90,14 +95,13 @@ class Proxy(ProxyBase):
             # give client ability to send data into socket to remote server
             self.client_to_proxy.server = self.proxy_to_server.server
             self.proxy_to_server.client = self.client_to_proxy.client
+            self.proxy_to_server.daemon = True
 
             self.client_to_proxy.start()
             self.proxy_to_server.start()
 
 
-if __name__ == '__main__':
-    import sys
-    _, from_host, from_port, to_host, to_port = sys.argv
+def run_proxy(from_host, from_port, to_host, to_port):
     print('Starting Proxy {from_host}:{from_port} -> {to_host}:{to_port}'.format(
         from_host=from_host,
         from_port=from_port,
@@ -112,7 +116,15 @@ if __name__ == '__main__':
         cmd = input('$ ')
         if cmd[:4] == 'quit':
             break
+        else:
+            log.warning('admin input: {}'.format(cmd))
 
     proxy.kill()
     print('Exiting on cmd {cmd}'.format(cmd=cmd))
     raise Exception('')
+
+
+if __name__ == '__main__':
+    import sys
+    _, from_host, from_port, to_host, to_port = sys.argv
+    run_proxy(from_host, from_port, to_host, to_port)
