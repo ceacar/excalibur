@@ -4,7 +4,6 @@ project_name = excalibur
 service_port = 35555
 server_ip = localhost
 
-
 run:
 	(source setenv;\
 	export PORT=$(service_port);\
