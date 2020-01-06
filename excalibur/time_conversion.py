@@ -1,6 +1,7 @@
 import pytz
 import datetime
 import calendar
+import time
 
 __standard_datetime_format = '%Y-%m-%d %H:%M:%S'
 
@@ -44,8 +45,13 @@ def to_unix(time_str, time_format=__standard_datetime_format):
 
 
 def get_current_unix_time():
-    import time
     return int(time.time())
+
+
+def dt_to_unix(dt_obj):
+    # time.mktime will automatic do timezone conversion from your local timezone to utc timezone
+    # so be aware of not passing in a non local timezone dt_obj to avoid erronous result
+    return int(time.mktime(dt_obj.timetuple()))
 
 
 def __from_unix_int(unix_int):
