@@ -59,11 +59,7 @@ def __auto_unpack_base(format_str, hex_string, littleendian=True):
     format_derived += format_str * length
     unpack_result = __unpack_base(format_derived, hex_string)
 
-    result = []
-    for res in unpack_result:
-        result.append(res)
-
-    return result
+    return next(iter(unpack_result), None)
 
 
 def create_unpack_functions(format_str):
@@ -74,9 +70,8 @@ def create_unpack_functions(format_str):
 
 def unpack_as_string(hex_string, decoder="utf-8"):
     res = __auto_unpack_base('s', hex_string)
-    decoded_arr = [unpacked.decode(decoder) for unpacked in res]
-    str_output = ''.join(d if d != '\x00' else '' for d in decoded_arr)  # \x00 means null
-    return str_output
+    decoded = res.decode(decoder)
+    return decoded.strip('\x00')
 
 
 def unpack_as_string_GBK(hex_string, decoder="GBK"):

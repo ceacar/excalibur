@@ -1,3 +1,6 @@
+import sys
+
+
 def merge_dicts(*dicts):
     items = []
     for single_dict in dicts:
@@ -9,7 +12,7 @@ def merge_dicts(*dicts):
 
 class dotdict(dict):
     """
-	dot.notation access to dictionary attributes
+    dot.notation access to dictionary attributes
     mydict = {'val':'it works'}
     nested_dict = {'val':'nested works too'}
     mydict = dotdict(mydict)
@@ -19,7 +22,13 @@ class dotdict(dict):
     mydict.nested = dotdict(nested_dict)
     mydict.nested.val
     # 'nested works too'
-	"""
+    """
     __getattr__ = dict.get
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
+
+
+def dlProgress(count, blockSize, totalSize):
+    percent = int(count * blockSize * 100 / totalSize)
+    sys.stdout.write("\r" + "...%d%%" % percent)
+    sys.stdout.flush()

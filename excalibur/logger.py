@@ -1,23 +1,19 @@
 import logging
 import functools
 
-__logger_instance = None
 __default_logging_format = '%(asctime)s|%(levelname)s|%(filename)s|%(module)s|%(funcName)s|%(message)s'
 
-
-def __get_singleton_stdout_logger(logger_format=__default_logging_format):
-    global __logger_instance
-    if not __logger_instance:
-        __logger_instance = get_stdout_logger(logger_format=logger_format)
-    return __logger_instance
-
+def _remove_excessive_logger_handler(log_instance):
+    while log_instance.hasHandlers():
+        for i in log_instance.handlers:
+            log_instance.removeHandler(i)
 
 def logger_wrapper(orig_func):
     """
     a wrapper used as @logger_wrapper to print log of a function
     """
     # logging.basicConfig(filename='/tmp/{}.log'.format(orig_func.__name__), level=logging.INFO)
-    logger = __get_singleton_stdout_logger()
+    logger = get_stdout_logger()
     @functools.wraps(orig_func)
     def wrapper(*args, **kwargs):
         logger.info(
@@ -30,8 +26,10 @@ def logger_wrapper(orig_func):
 def __get_logger(file_handler, level=logging.DEBUG):
     logger = logging.getLogger(__name__)  # if run in main the name would be main, module then module
     # set to DEBUG for root logger by default, so sub logger can have freedom of configuring levels
+    _remove_excessive_logger_handler(logger)
     logger.setLevel(level)
-    logger.addHandler(file_handler)
+    if not logger.handlers:
+        logger.addHandler(file_handler)
     return logger
 
 
@@ -67,4 +65,4 @@ def getlogger(logger_format=__default_logging_format):
     """
     returns a logger that is shared across module to print to std
     """
-    return __get_singleton_stdout_logger(logger_format=logger_format)
+    return get_stdout_logger(logger_format=logger_format)

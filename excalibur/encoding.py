@@ -44,7 +44,6 @@ def check_utf8_length(hex_input, littlendian=True):
     """
 
     length = len(hex_input)
-
     if length < 2 or length % 2 > 0:
         return -1
 
@@ -52,25 +51,27 @@ def check_utf8_length(hex_input, littlendian=True):
     hex_input_list = [hex_input[i:i+2] for i in range(0, len(hex_input), 2)]
     decimal_input_list = [dec(hex_input) for hex_input in hex_input_list]
 
-    if decimal_input_list[0] & dec("0xF8") == dec("0xF0") \
+    decimal_list_length = len(decimal_input_list)
+
+    if decimal_list_length == 4 and decimal_input_list[0] & dec("0xF8") == dec("0xF0") \
         and decimal_input_list[1] & dec("0xC0") == dec("0x80") \
         and decimal_input_list[2] & dec("0xC0") == dec("0x80") \
         and decimal_input_list[3] & dec("0xC0") == dec("0x80"):
             # start of 4-byte sequence
             return 4
 
-    if decimal_input_list[0] & dec("0xF0") == dec("0xE0") \
+    if decimal_list_length == 3 and decimal_input_list[0] & dec("0xF0") == dec("0xE0") \
         and decimal_input_list[1] & dec("0xC0") == dec("0x80") \
             and decimal_input_list[2] & dec("0xC0") == dec("0x80"):
             # start of 3-byte sequence
             return 3
 
-    if decimal_input_list[0] & dec("0xE0") == dec("0xC0") \
+    if decimal_list_length == 2 and decimal_input_list[0] & dec("0xE0") == dec("0xC0") \
             and decimal_input_list[1] & dec("0xC0") == dec("0x80"):
             # start of 2-byte sequence
             return 2
 
-    if decimal_input_list[0] & dec("0x80") == dec("0x00"):
+    if decimal_list_length == 1 and decimal_input_list[0] & dec("0x80") == dec("0x00"):
         return 1
 
     # all condition has tried, seems not utf-8
@@ -89,6 +90,9 @@ def check_utf16_length(input_hex_str, littleendian=True):
     """
 
     length = len(input_hex_str)
+    if length < 4:
+        return -1
+
     BOM = 'feff'
 
     indice_orders = [0, 1, 2, 3]
@@ -105,6 +109,7 @@ def check_utf16_length(input_hex_str, littleendian=True):
 
     hex_input_list = [input_hex_str[i:i+2] for i in range(0, length, 2)]
     decimal_input_list = [dec(hex_input) for hex_input in hex_input_list]
+    decimal_list_length = len(decimal_input_list)
 
     # we only need to check 4 bytes situtition
     # check first byte has 110110xx ????????  ( 8+16+64+128)
@@ -114,13 +119,50 @@ def check_utf16_length(input_hex_str, littleendian=True):
         return 4 + byte_sequence_length_base
 
     # if it is 2 bytes, there is nothing to check
-    return 2 + byte_sequence_length_base
+    if length == 4:
+        return 2 + byte_sequence_length_base
+
+    # utf-16 only have 2 bytes or 4 bytes case
+    return -1
 
 
-def decode_utf8_with_auto_length_detection(input_hex_str):
+def check_gbk_length(input_hex_str, littleendian=True):
+    """
+	A character is encoded as 1 or 2 bytes.
+	A byte in the range 00–7F is a single byte that means the same thing as it does in ASCII.
+	Strictly speaking, there are 95 characters and 33 control codes in this range.
+
+	A byte with the high bit set indicates that it is the first of 2 bytes.
+	Loosely speaking, the first byte is in the range 81–FE (that is, never 80 or FF), and the second byte is 40–A0 except 7F for some areas and A1–FE for others.
+	"""
+    length = len(input_hex_str)
+    if length < 2:
+        return -1
+
+    # skip BOM
+    hex_input_list = [input_hex_str[i:i+2] for i in range(0, length, 2)]
+    decimal_input_list = [dec(hex_input) for hex_input in hex_input_list]
+
+    # TODO:still doesn't know what the order would be like for littleendian and big endian in gbk encoding
+    indice_orders = [0, 1]
+
+    # we only need to check 4 bytes situtition
+    # if first byte has highest bit set to 1, we know it is a 2 byte sequence
+    if length >= 4 and decimal_input_list[indice_orders[0]] & dec("0x80") == dec("0x80"):
+        return 2
+
+    return 1
+
+
+def _decode_utf8_with_auto_length_detection(input_hex_str, littleendian=True):
     """
     recursively finds the utf-8 byte length and then decode accordingly
+    utf8 doesn't have endian problem. but still put the littleendian option parameter to keep consistency
     """
+
+    if not input_hex_str:
+        return ''
+
     # skip BOM
     if input_hex_str[:6] == 'efbbbf':
         sys.stderr.write('\nremoved header efbbbf from {}\n'.format(input_hex_str))
@@ -149,7 +191,7 @@ def decode_utf8_with_auto_length_detection(input_hex_str):
         # this input is invalid, so will just ignore this 1 byte
         current_decoded = '?'
         input_hex_str = input_hex_str[2:]
-        future_decoded = decode_utf8_with_auto_length_detection(input_hex_str)
+        future_decoded = _decode_utf8_with_auto_length_detection(input_hex_str)
         return current_decoded + future_decoded
 
 
@@ -158,13 +200,19 @@ def decode_utf8_with_auto_length_detection(input_hex_str):
         # when there is still input, we will decode
         # we will crop the input_hex_str and then try to decode
         to_decode = input_hex_str[:2 * byte_sequence_length]
-        current_decoded = decode_utf8_with_auto_length_detection(to_decode)
+        current_decoded = _decode_utf8_with_auto_length_detection(to_decode)
         input_hex_str = input_hex_str[2 * byte_sequence_length:]
-        future_decoded = decode_utf8_with_auto_length_detection(input_hex_str)
+        print(input_hex_str)
+        future_decoded = _decode_utf8_with_auto_length_detection(input_hex_str)
         return current_decoded + future_decoded
 
     if len(input_hex_str) < byte_sequence_length * 2:
         raise Exception('should not be here, unless check length function is wrong')
+
+
+def decode_utf8_with_auto_length_detection(input_hex_str, littleendian=True):
+    res = _decode_utf8_with_auto_length_detection(input_hex_str, littleendian=littleendian)
+    return res.strip('\x00')  # sanitize results, 00 will be decoded as \x00
 
 
 def decode_utf16_with_auto_length_detection(input_hex_str, littleendian=True):
@@ -176,6 +224,8 @@ def decode_utf16_with_auto_length_detection(input_hex_str, littleendian=True):
     # 'fffe43d8bcdf'
     # 1. there is bom
     # 2. there is no bom
+    if not input_hex_str:
+        return ''
 
     length = len(input_hex_str)
     if length < 4:
@@ -219,24 +269,77 @@ def decode_utf16_with_auto_length_detection(input_hex_str, littleendian=True):
     return current_decoded + future_decoded
 
 
+def _decode_gbk_with_auto_length_detection(input_hex_str, littleendian=True):
+    """
+    recursively finds the utf-8 byte length and then decode accordingly, this trusts input_hex_str is precisely gbk,
+    gbk can't find any endian related information.
+    """
+    if not input_hex_str:
+        return ''
+
+    length = len(input_hex_str)
+
+    if len(input_hex_str) % 2 > 0:
+        raise ValueError('input length is not even, cannot decode')
+
+    byte_sequence_length = check_gbk_length(input_hex_str)
+
+    # we have recursively hit the end of input hex, so we decode the byte/bytes
+    if len(input_hex_str) == byte_sequence_length * 2:
+        # now we finally get only the bytes suit the byte_sequence length, we will decode
+        try:
+            res = bytearray.fromhex(input_hex_str).decode('gbk')
+            return res
+        except:
+            return '?'
+
+    # we have not hit the end of recursion, so we continue the recursion
+    if len(input_hex_str) > byte_sequence_length * 2:
+        # when there is still input, we will decode
+        # we will crop the input_hex_str and then try to decode
+        to_decode = input_hex_str[:2 * byte_sequence_length]
+        current_decoded = _decode_gbk_with_auto_length_detection(to_decode)
+        input_hex_str = input_hex_str[2 * byte_sequence_length:]
+        future_decoded = _decode_gbk_with_auto_length_detection(input_hex_str)
+        return current_decoded + future_decoded
+
+    if len(input_hex_str) < byte_sequence_length * 2:
+        raise Exception('should not be here, unless check length function is wrong')
+
+
+def decode_gbk_with_auto_length_detection(input_hex_str, littleendian=True):
+    res = _decode_gbk_with_auto_length_detection(input_hex_str, littleendian=littleendian)
+    return res.strip('\x00')
+
+
 def _brute_force_base(decode_func, input_hex_str, littleendian=True):
     """
     input is variable length of hex string.
     it will try different length of hex for decoding
     1. this string maybe feed with a partial byte, so we iterate one hex(half byte) at a time
     """
-    if len(input_hex_str) % 2 > 0:
-        # put a 0 in the end to make it a even length
-        input_hex_str = input_hex_str + '0'
+    # add a 0 at the top would cover all cases for partial string
+    input_hex_str = '0' + input_hex_str
 
-    for i in range(0, len(input_hex_str), 2):
+    translated_msgs = []
+
+    for i in range(0, len(input_hex_str)):
         to_decode = input_hex_str[i:]
+
+        if len(to_decode) % 2 > 0:
+            # put a 0 in the end to make it a even length
+            to_decode = to_decode + '0'
+
         try:
             res = decode_func(to_decode, littleendian)
         except Exception:
             res = ''
         if res:
-            print('{} <- {}'.format(res, to_decode))
+            translated_msgs.append('{} <- {}'.format(res, to_decode))
+
+    # translated_msgs.reverse()
+    for msg in translated_msgs:
+        print(msg)
 
 
 def brute_force_partial_utf16(input_hex_str, littleendian=True):
@@ -254,15 +357,16 @@ def brute_force_partial_utf8(input_hex_str, littleendian=True):
     it will try different length of hex for decoding
     1. this string maybe feed with a partial byte, so we iterate one hex(half byte) at a time
     """
+
     _brute_force_base(decode_utf8_with_auto_length_detection, input_hex_str, littleendian)
 
-
-def decode_brute_force(input_hex_str, littleendian = True):
-    print('utf-8')
-    brute_force_partial_utf8(input_hex_str, littleendian)
-    print('utf-16')
-    brute_force_partial_utf16(input_hex_str, littleendian)
-
+def brute_force_partial_gbk(input_hex_str, littleendian=True):
+    """
+    input is variable length of hex string.
+    it will try different length of hex for decoding
+    1. this string maybe feed with a partial byte, so we iterate one hex(half byte) at a time
+    """
+    _brute_force_base(decode_gbk_with_auto_length_detection, input_hex_str, littleendian)
 
 def decode_as_decimal_brute_force(hex_input, littleendian = True):
     hex_input_list = [hex_input[i:i+2] for i in range(0, len(hex_input), 2)]
@@ -270,183 +374,160 @@ def decode_as_decimal_brute_force(hex_input, littleendian = True):
     return decimal_input_list
 
 
-class EncodingDetectFile:
-    ENCODING_ASCII = 'ascii'
-    ENCODING_UTF_8 = 'utf_8'
-    ENCODING_UTF_16_BE = 'utf_16_be'
-    ENCODING_UTF_16_LE = 'utf_16_le'
+def decode_brute_force(input_hex_str, littleendian = True):
+    print('utf-8')
+    brute_force_partial_utf8(input_hex_str, littleendian)
+    print('utf-16')
+    brute_force_partial_utf16(input_hex_str, littleendian)
+    print('gbk')
+    brute_force_partial_gbk(input_hex_str, littleendian)
+    print('decimal')
+    print(decode_as_decimal_brute_force(input_hex_str, littleendian))
 
-    # http://unicode.org/faq/utf_bom.html#BOM
-    BOM_UTF_8 = '\xef\xbb\xbf'
-    BOM_UTF_16_BE = '\xfe\xff'
-    BOM_UTF_16_LE = '\xff\xfe'
 
-    BYTE_EOL = (13,10) # \r\n
-
-    UTF_16_NULL_PERCENT_POSITIVE = 0.7
-    UTF_16_NULL_PERCENT_NEGATIVE = 0.1
-
-    def _detect_bom(self,fh):
-        def result(encoding,bom_marker):
-            return (encoding,bom_marker,None)
-
-        # test 2 byte UTF-16 BOMs
-        file_data = bytearray(fh.read(2))
-        if (file_data == EncodingDetectFile.BOM_UTF_16_BE):
-            return result(
-                EncodingDetectFile.ENCODING_UTF_16_BE,
-                EncodingDetectFile.BOM_UTF_16_BE
-            )
-
-        if (file_data == EncodingDetectFile.BOM_UTF_16_LE):
-            return result(
-                EncodingDetectFile.ENCODING_UTF_16_LE,
-                EncodingDetectFile.BOM_UTF_16_LE
-            )
-
-        # test 3 byte UTF-8 BOM
-        file_data.append(fh.read(1))
-        if (file_data == EncodingDetectFile.BOM_UTF_8):
-            return result(
-                EncodingDetectFile.ENCODING_UTF_8,
-                EncodingDetectFile.BOM_UTF_8
-            )
-
-        # no BOM marker - return bytes read so far
-        return False,False,file_data
-
-    def _detect_ascii_utf8(self,file_data):
-        ascii_chars_only = True
-
-        byte_follow = 0
-        for file_byte in file_data:
-            # process additional character byte(s)
-            if (byte_follow):
-                if (128 <= file_byte <= 191):
-                    byte_follow -= 1
-                    ascii_chars_only = False
-                    continue
-
-                # not ASCII or UTF-8
-                return False
-
-            # determine byte length of character
-            # https://en.wikipedia.org/wiki/UTF-8#Codepage_layout
-            if (1 <= file_byte <= 127):
-                # single byte
-                continue
-
-            if (194 <= file_byte <= 223):
-                # one byte follows
-                byte_follow = 1
-                continue
-
-            if (224 <= file_byte <= 239):
-                # two bytes follow
-                byte_follow = 2
-                continue
-
-            if (240 <= file_byte <= 244):
-                # three bytes follow
-                byte_follow = 3
-                continue
-
-            # not ASCII or UTF-8
-            return False
-
-        # end of file data [byte_follow] must be zero to ensure last character was consumed
-        if (byte_follow):
-            return False
-
-        # success - return ASCII or UTF-8 result
-        return (
-            EncodingDetectFile.ENCODING_ASCII
-            if (ascii_chars_only)
-            else EncodingDetectFile.ENCODING_UTF_8
-        )
-
-    def _detect_utf16(self,file_data):
-        null_byte_odd,null_byte_even = 0,0
-        eol_odd,eol_even = 0,0
-
-        odd_byte = None
-        for file_byte in file_data:
-            # build pairs of bytes
-            if (odd_byte is None):
-                odd_byte = file_byte
-                continue
-
-            # look for odd/even null byte and check other byte for EOL
-            if (odd_byte == 0):
-                null_byte_odd += 1
-                if (file_byte in EncodingDetectFile.BYTE_EOL):
-                    eol_even += 1
-
-            elif (file_byte == 0):
-                null_byte_even += 1
-                if (odd_byte in EncodingDetectFile.BYTE_EOL):
-                    eol_odd += 1
-
-            odd_byte = None
-
-        # attempt detection based on line endings
-        if ((not eol_odd) and eol_even):
-            return EncodingDetectFile.ENCODING_UTF_16_BE
-
-        if (eol_odd and (not eol_even)):
-            return EncodingDetectFile.ENCODING_UTF_16_LE
-
-        # can't detect on line endings - evaluate ratio of null bytes in odd/even positions
-        # this will give an indication of how much ASCII (1-127) level text is present
-        data_size_half = (len(file_data) / 2)
-        threshold_positive = int(data_size_half * EncodingDetectFile.UTF_16_NULL_PERCENT_POSITIVE)
-        threshold_negative = int(data_size_half * EncodingDetectFile.UTF_16_NULL_PERCENT_NEGATIVE)
-
-        # must have enough file data to have value ([threshold_positive] must be non-zero)
-        if (threshold_positive):
-            if ((null_byte_odd > threshold_positive) and (null_byte_even < threshold_negative)):
-                return EncodingDetectFile.ENCODING_UTF_16_BE
-
-            if ((null_byte_odd < threshold_negative) and (null_byte_even > threshold_positive)):
-                return EncodingDetectFile.ENCODING_UTF_16_LE
-
-        # not UTF-16 - or insufficient data to determine with confidence
-        return False
-
-    def load(self,file_path):
-        # open file
-        fh = open(file_path,'r')
-
-        # detect a byte order mark (BOM)
-        file_encoding,bom_marker,file_data = self._detect_bom(fh)
-        if (file_encoding):
-            # file has a BOM - decode everything past it
-            decode = fh.read().decode(file_encoding)
-            fh.close()
-
-            return (file_encoding,bom_marker,decode)
-
-        # no BOM - read remaining file data
-        file_data.extend(fh.read())
-        fh.close()
-
-        # test for ASCII/UTF-8
-        file_encoding = self._detect_ascii_utf8(file_data)
-        if (file_encoding):
-            # file is ASCII or UTF-8 (without BOM)
-            return (
-                file_encoding,None,
-                file_data.decode(file_encoding)
-            )
-
-        # test for UTF-16
-        file_encoding = self._detect_utf16(file_data)
-        if (file_encoding):
-            # file is UTF-16(-like) (without BOM)
-            return (
-                file_encoding,None,
-                file_data.decode(file_encoding)
-            )
-
-        # can't determine encoding
-        return False
+# class EncodingDetectFile:
+#     ENCODING_ASCII = 'ascii'
+#     ENCODING_UTF_8 = 'utf_8'
+#     ENCODING_UTF_16_BE = 'utf_16_be'
+#     ENCODING_UTF_16_LE = 'utf_16_le'
+#     # http://unicode.org/faq/utf_bom.html#BOM
+#     BOM_UTF_8 = '\xef\xbb\xbf'
+#     BOM_UTF_16_BE = '\xfe\xff'
+#     BOM_UTF_16_LE = '\xff\xfe'
+#     BYTE_EOL = (13,10) # \r\n
+#     UTF_16_NULL_PERCENT_POSITIVE = 0.7
+#     UTF_16_NULL_PERCENT_NEGATIVE = 0.1
+#     def _detect_bom(self,fh):
+#         def result(encoding,bom_marker):
+#             return (encoding,bom_marker,None)
+#         # test 2 byte UTF-16 BOMs
+#         file_data = bytearray(fh.read(2))
+#         if (file_data == EncodingDetectFile.BOM_UTF_16_BE):
+#             return result(
+#                 EncodingDetectFile.ENCODING_UTF_16_BE,
+#                 EncodingDetectFile.BOM_UTF_16_BE
+#             )
+#         if (file_data == EncodingDetectFile.BOM_UTF_16_LE):
+#             return result(
+#                 EncodingDetectFile.ENCODING_UTF_16_LE,
+#                 EncodingDetectFile.BOM_UTF_16_LE
+#             )
+#         # test 3 byte UTF-8 BOM
+#         file_data.append(fh.read(1))
+#         if (file_data == EncodingDetectFile.BOM_UTF_8):
+#             return result(
+#                 EncodingDetectFile.ENCODING_UTF_8,
+#                 EncodingDetectFile.BOM_UTF_8
+#             )
+#         # no BOM marker - return bytes read so far
+#         return False,False,file_data
+#     def _detect_ascii_utf8(self,file_data):
+#         ascii_chars_only = True
+#         byte_follow = 0
+#         for file_byte in file_data:
+#             # process additional character byte(s)
+#             if (byte_follow):
+#                 if (128 <= file_byte <= 191):
+#                     byte_follow -= 1
+#                     ascii_chars_only = False
+#                     continue
+#                 # not ASCII or UTF-8
+#                 return False
+#             # determine byte length of character
+#             # https://en.wikipedia.org/wiki/UTF-8#Codepage_layout
+#             if (1 <= file_byte <= 127):
+#                 # single byte
+#                 continue
+#             if (194 <= file_byte <= 223):
+#                 # one byte follows
+#                 byte_follow = 1
+#                 continue
+#             if (224 <= file_byte <= 239):
+#                 # two bytes follow
+#                 byte_follow = 2
+#                 continue
+#             if (240 <= file_byte <= 244):
+#                 # three bytes follow
+#                 byte_follow = 3
+#                 continue
+#             # not ASCII or UTF-8
+#             return False
+#         # end of file data [byte_follow] must be zero to ensure last character was consumed
+#         if (byte_follow):
+#             return False
+#         # success - return ASCII or UTF-8 result
+#         return (
+#             EncodingDetectFile.ENCODING_ASCII
+#             if (ascii_chars_only)
+#             else EncodingDetectFile.ENCODING_UTF_8
+#         )
+#     def _detect_utf16(self,file_data):
+#         null_byte_odd,null_byte_even = 0,0
+#         eol_odd,eol_even = 0,0
+#         odd_byte = None
+#         for file_byte in file_data:
+#             # build pairs of bytes
+#             if (odd_byte is None):
+#                 odd_byte = file_byte
+#                 continue
+#             # look for odd/even null byte and check other byte for EOL
+#             if (odd_byte == 0):
+#                 null_byte_odd += 1
+#                 if (file_byte in EncodingDetectFile.BYTE_EOL):
+#                     eol_even += 1
+#             elif (file_byte == 0):
+#                 null_byte_even += 1
+#                 if (odd_byte in EncodingDetectFile.BYTE_EOL):
+#                     eol_odd += 1
+#             odd_byte = None
+#         # attempt detection based on line endings
+#         if ((not eol_odd) and eol_even):
+#             return EncodingDetectFile.ENCODING_UTF_16_BE
+#         if (eol_odd and (not eol_even)):
+#             return EncodingDetectFile.ENCODING_UTF_16_LE
+#         # can't detect on line endings - evaluate ratio of null bytes in odd/even positions
+#         # this will give an indication of how much ASCII (1-127) level text is present
+#         data_size_half = (len(file_data) / 2)
+#         threshold_positive = int(data_size_half * EncodingDetectFile.UTF_16_NULL_PERCENT_POSITIVE)
+#         threshold_negative = int(data_size_half * EncodingDetectFile.UTF_16_NULL_PERCENT_NEGATIVE)
+#         # must have enough file data to have value ([threshold_positive] must be non-zero)
+#         if (threshold_positive):
+#             if ((null_byte_odd > threshold_positive) and (null_byte_even < threshold_negative)):
+#                 return EncodingDetectFile.ENCODING_UTF_16_BE
+#             if ((null_byte_odd < threshold_negative) and (null_byte_even > threshold_positive)):
+#                 return EncodingDetectFile.ENCODING_UTF_16_LE
+#         # not UTF-16 - or insufficient data to determine with confidence
+#         return False
+#     def load(self,file_path):
+#         # open file
+#         fh = open(file_path,'r')
+#         # detect a byte order mark (BOM)
+#         file_encoding,bom_marker,file_data = self._detect_bom(fh)
+#         if (file_encoding):
+#             # file has a BOM - decode everything past it
+#             decode = fh.read().decode(file_encoding)
+#             fh.close()
+#             return (file_encoding,bom_marker,decode)
+#         # no BOM - read remaining file data
+#         file_data.extend(fh.read())
+#         fh.close()
+#         # test for ASCII/UTF-8
+#         file_encoding = self._detect_ascii_utf8(file_data)
+#         if (file_encoding):
+#             # file is ASCII or UTF-8 (without BOM)
+#             return (
+#                 file_encoding,None,
+#                 file_data.decode(file_encoding)
+#             )
+# 
+#         # test for UTF-16
+#         file_encoding = self._detect_utf16(file_data)
+#         if (file_encoding):
+#             # file is UTF-16(-like) (without BOM)
+#             return (
+#                 file_encoding,None,
+#                 file_data.decode(file_encoding)
+#             )
+# 
+#         # can't determine encoding
+#         return False

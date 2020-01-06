@@ -43,6 +43,11 @@ def to_unix(time_str, time_format=__standard_datetime_format):
     return calendar.timegm(dt.timetuple())
 
 
+def get_current_unix_time():
+    import time
+    return int(time.time())
+
+
 def __from_unix_int(unix_int):
     try:
         return datetime.datetime.utcfromtimestamp(unix_int).strftime(__standard_datetime_format)

@@ -5,8 +5,6 @@ import ctypes
 import excalibur.logger as logger
 
 
-__default_logging_format = '%(asctime)s|%(levelname)s|%(message)s'
-log = logger.getlogger(logger_format=__default_logging_format)
 
 
 class ProxyBase(threading.Thread):
@@ -80,6 +78,7 @@ class Proxy(ProxyBase):
 
         self.client_to_proxy = None
         self.proxy_to_server = None
+        self.running = False
 
     def kill(self):
         if self.client_to_proxy:
@@ -89,19 +88,22 @@ class Proxy(ProxyBase):
         self.raise_exception()
 
     def run(self):
+
         while True:
             self.client_to_proxy = ClientToProxy(self.from_host, self.from_port)  # point client to my port
             self.proxy_to_server = ProxyToServer(self.to_host, self.to_port)
             # give client ability to send data into socket to remote server
             self.client_to_proxy.server = self.proxy_to_server.server
             self.proxy_to_server.client = self.client_to_proxy.client
-            self.proxy_to_server.daemon = True
-
+            self.running = True
             self.client_to_proxy.start()
             self.proxy_to_server.start()
 
 
 def run_proxy(from_host, from_port, to_host, to_port):
+    __default_logging_format = '%(asctime)s|%(levelname)s|%(message)s'
+    log = logger.getlogger(logger_format=__default_logging_format)
+
     print('Starting Proxy {from_host}:{from_port} -> {to_host}:{to_port}'.format(
         from_host=from_host,
         from_port=from_port,
@@ -118,6 +120,22 @@ def run_proxy(from_host, from_port, to_host, to_port):
             break
         else:
             log.warning('admin input: {}'.format(cmd))
+            if proxy.running:
+                cmd_arr = cmd.split()
+                if cmd_arr[0].startWith('S'):
+                    try:
+                        bytes_from_hex = bytearray.fromhex(cmd_arr[1])
+                        proxy.proxy_to_server.sendall(bytes_from_hex)
+                    except Exception as e:
+                        print('error decoding {}, {}'.format(bytes_from_hex, str(e)))
+
+                if cmd_arr[0].startWith('C'):
+                    try:
+                        bytes_from_hex = bytearray.fromhex(cmd_arr[1])
+                        proxy.client_to_proxy.sendall(bytes_from_hex)
+                    except Exception as e:
+                        print('error decoding {}, {}'.format(bytes_from_hex, str(e)))
+    # TODO: added send packets, should i build a queue for it ??
 
     proxy.kill()
     print('Exiting on cmd {cmd}'.format(cmd=cmd))
