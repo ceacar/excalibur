@@ -76,7 +76,7 @@ def unpack_as_string(hex_string, decoder="utf-8"):
 
 def unpack_as_string_GBK(hex_string, decoder="GBK"):
     byte_array_temp = bytearray.fromhex(hex_string)
-    unpacked_string = [byte_array_temp[i:i+2].decode(decoder) for i in range(0, len(byte_array_temp), 2)]
+    unpacked_string = [byte_array_temp[i:i + 2].decode(decoder) for i in range(0, len(byte_array_temp), 2)]
     return [''.join(unpacked_string)]  # return as a list to keep consistency of method name and return types
 
 
@@ -111,6 +111,7 @@ def unpack_as_decimal(hex_string):
         return int(hex_string, 16)
     except Exception as e:
         return str(e)
+
 
 def unpack_as_decimal_list(hex_string):
     # will split hex string in two characters group and then translate
@@ -151,3 +152,7 @@ def parse_hex_string(hex_string):
     res = unpack_as_decimal_list(hex_string)
     print('decimal_split_2 -> {}'.format(res))
     try_funcs(string_unpack_funcs, hex_string)
+
+
+def string_to_hex(string):
+    return ''.join(["{:02x}".format(ord(c)) for c in string])

@@ -3,10 +3,14 @@ import functools
 
 __default_logging_format = '%(asctime)s|%(levelname)s|%(filename)s|%(module)s|%(funcName)s|%(message)s'
 
+__logger = None
+
+
 def _remove_excessive_logger_handler(log_instance):
     while log_instance.hasHandlers():
         for i in log_instance.handlers:
             log_instance.removeHandler(i)
+
 
 def logger_wrapper(orig_func):
     """
@@ -47,7 +51,7 @@ def get_stdout_logger(logging_level=logging.DEBUG, logger_format=__default_loggi
     return __get_logger(stream_handler, level=logging_level)
 
 
-def get_file_logger(log_file_path='/tmp/logger.log', logging_level=logging.DEBUG, logger_format=__default_logging_format):
+def get_file_logger(log_file_path='/tmp/logger.log', logging_level=logging.DEBUG, logger_format=__default_logging_format, encoding=None):
     """
     usage
     new_logger = get_file_logger()
@@ -55,7 +59,7 @@ def get_file_logger(log_file_path='/tmp/logger.log', logging_level=logging.DEBUG
     logger.info("test234") #here need to use logger instad of default logging
     ...
     """
-    file_handler = logging.FileHandler(log_file_path)  # use this as the same of file handler
+    file_handler = logging.FileHandler(log_file_path, encoding=encoding)  # use this as the same of file handler
     formatter = logging.Formatter(logger_format)
     file_handler.setFormatter(formatter)
     return __get_logger(file_handler, level=logging_level)
@@ -65,4 +69,7 @@ def getlogger(logger_format=__default_logging_format):
     """
     returns a logger that is shared across module to print to std
     """
-    return get_stdout_logger(logger_format=logger_format)
+    global __logger
+    if not __logger:
+        __logger = get_stdout_logger(logger_format=logger_format)
+    return __logger

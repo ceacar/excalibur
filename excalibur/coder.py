@@ -24,8 +24,6 @@ def translate_to_int(string, little_endian=True, block_size=4):
     str_slice = string[: block_size]
 
     while str_slice:
-        import ipdb
-        ipdb.set_trace()
         init_position += block_size
         buf = bytes(str_slice, 'utf-8')
         sys.stderr.write(buf.decode('utf-8'))
