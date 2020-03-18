@@ -28,5 +28,7 @@ from . import encoding
 from . import web_scraper_utility
 from . import hash_utility
 from . import zscrapper
+from . import json_utility
+from . import email_utility
 
 name = "excalibur"
