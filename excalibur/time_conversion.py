@@ -56,6 +56,10 @@ def get_current_date(date_format="%Y-%m-%d"):
     return datetime.datetime.now().strftime(date_format)
 
 
+def get_current_hour(date_format="%H"):
+    return datetime.datetime.now().strftime(date_format)
+
+
 def dt_to_unix(dt_obj):
     # time.mktime will automatic do timezone conversion from your local timezone to utc timezone
     # so be aware of not passing in a non local timezone dt_obj to avoid erronous result
