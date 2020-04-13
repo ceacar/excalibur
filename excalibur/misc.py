@@ -52,3 +52,13 @@ def flat_dict_list(dict_list):
     for d in res_list:
         res.update(d)
     return res
+
+
+def compare_string_ignore_white_space_and_newline(a, b):
+    """
+    this method would remove white space and new line from two string, and then compare two string
+    """
+
+    a_clean = a.replace(' ', '').strip()
+    b_clean = b.replace(' ', '').strip()
+    return a_clean == b_clean

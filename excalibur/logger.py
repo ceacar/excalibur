@@ -65,7 +65,7 @@ def get_file_logger(log_file_path='/tmp/logger.log', logging_level=logging.DEBUG
     return __get_logger(file_handler, level=logging_level)
 
 
-def getlogger(logger_format=__default_logging_format):
+def getlogger(logger_format=__default_logging_format, logging_level=logging.INFO):
     """
     returns a logger that is shared across module to print to std
     """
@@ -73,3 +73,7 @@ def getlogger(logger_format=__default_logging_format):
     if not __logger:
         __logger = get_stdout_logger(logger_format=logger_format)
     return __logger
+
+
+def getlogger_debug():
+    return getlogger(logging_level=logging.DEBUG)

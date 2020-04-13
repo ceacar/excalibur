@@ -3,7 +3,6 @@ from excalibur.timing import *
 from excalibur.misc import *
 from excalibur.chunkify import *
 from excalibur.generate_holidays import *
-from excalibur.gzip_utility import *
 from excalibur.no_market_holidays import *
 from excalibur.random_cmd import *
 from excalibur.random_string import *
@@ -30,5 +29,6 @@ from . import hash_utility
 from . import zscrapper
 from . import json_utility
 from . import email_utility
+from . import file_utility
 
 name = "excalibur"
